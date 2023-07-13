@@ -1,0 +1,268 @@
+{% extends 'store/main.html' %}
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bootstrap demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+</head>
+
+<body>
+
+
+
+    {% block content %}
+    <br>
+    <br>
+
+
+    <div style="justify-content: center;" class="row">
+        <div class="col-lg-6">
+            <div class="box-element" id="form-wrapper">
+                <form action="#" id="form">
+                    <div id="user-info">
+                        <div class="form-field">
+                            <input class="form-control" type="text" name="name" placeholder="Name..">
+                        </div>
+                        <div class="form-field">
+                            <input class="form-control" type="email" name="email" placeholder="Email..">
+                        </div>
+
+                    </div>
+
+
+
+                    <div style="float: right;" id="shipping-info">
+
+                        <hr>
+                        <p><b>Shipping Information:</b></p>
+                        <hr>
+                        <div class="form-field">
+                            <input class="form-control" type="text" name="address" placeholder="Address..">
+                        </div>
+                        <div class="form-field">
+                            <input class="form-control" type="text" name="city" placeholder="City..">
+                        </div>
+                        <div class="form-field">
+                            <input class="form-control" type="text" name="state" placeholder="State..">
+                        </div>
+                        <div class="form-field">
+                            <input class="form-control" type="text" name="zipcode" placeholder="Zip code..">
+                        </div>
+
+
+                    </div>
+                    <br>
+
+
+
+                    <input id="form-button" class="btn btn-success btn-block" type="submit" value="Continue">
+                </form>
+            </div>
+            <br>
+            <div  class="box-element hidden" id="payment-info">
+                <strong>Paypal Options</strong>
+                <div  id="paypal-button-container"></div>
+
+                <!-- <button id="make-payment">Make Payment</button> -->
+            </div>
+
+
+        </div>
+
+    </div>
+
+    <div style="justify-content: center;" class="row">
+        <div class="col-lg-6">
+            <div class="box-element" id="form-wrapper">
+                <a class="btn btn-outline-dark" href="{% url 'cart' %}">Back to cart</a>
+                <hr>
+                <h3>Order summary</h3>
+                <hr>
+                {% for item in items %}
+
+
+                <div class="cart-row">
+                    <div style="flex:2"><img class="row-image" src="{{item.product.imageURL}}"></div>
+                    <div style="flex:2">
+                        <p>{{item.product.name}}</p>
+                    </div>
+                    <div style="flex:1">
+                        <p>${{item.product.price}}</p>
+                    </div>
+                    <div style="flex:1">
+                        <p>x{{item.quantity}}</p>
+                    </div>
+                </div>
+                {% endfor %}
+                <h5>Items: {{order.get_cart_items}}</h5>
+                <h5>Total: ${{order.get_cart_total}}</h5>
+
+            </div>
+        </div>
+
+    </div>
+   
+
+    <!-- Include the PayPal JavaScript SDK -->
+    <script src="https://www.paypal.com/sdk/js?client-id=Ac8vDcgSb1o91uuMsqM4ehQg23089jYU3AMbBGnWVRyR81matLtw9yQqXP7e4q4J8bw-72ib1dtX3Cv2&currency=USD"></script>
+
+
+
+<script>
+    // Render the PayPal button into #paypal-button-container
+    var total = '{{order.get_cart_total}}'
+    paypal.Buttons({
+        locale: 'it_IT',
+        style: {
+            color: 'gold',
+            shape: 'rect',
+            layout: 'vertical',
+            label: 'pay'
+        },
+
+        // Set up the transaction
+        createOrder: function(data, actions) {
+            return actions.order.create({
+                purchase_units: [{
+                    amount: {
+                        value: parseFloat(total).toFixed(2)
+                    }
+                }]
+            });
+        },
+
+        // Finalize the transaction
+        onApprove: function(data, actions) {
+            return actions.order.capture().then(function(orderData) {
+                // Successful capture! For demo purposes:
+                console.log('Capture result', orderData, JSON.stringify(orderData, null, 2));
+                var transaction = orderData.purchase_units[0].payments.captures[0];
+                submitFormData()
+
+                // Replace the above to show a success message within this page, e.g.
+                // const element = document.getElementById('paypal-button-container');
+                // element.innerHTML = '';
+                // element.innerHTML = '<h3>Thank you for your payment!</h3>';
+                // Or go to another URL:  actions.redirect('thank_you.html');
+            });
+        }
+
+
+    }).render('#paypal-button-container');
+</script>
+
+
+
+    <script type="text/Javascript">
+        var shipping = '{{order.shipping}}'
+        
+
+        if(shipping == 'False'){
+            document.getElementById('shipping-info').innerHTML = ''
+        }
+
+        if (user != 'AnonymousUser'){
+            document.getElementById('user-info').classList.add("hidden");
+        }
+
+        if (shipping == 'False' && user != 'AnonymousUser'){
+            document.getElementById('form-wrapper').classList.add("hidden");
+            document.getElementById('payment-info').classList.remove("hidden");
+        }
+
+        var form = document.getElementById('form')
+
+        form.addEventListener('submit',function(e){
+            e.preventDefault()
+            console.log('Form submitted...')
+            document.getElementById('form-wrapper').classList.add('hidden')
+            document.getElementById('payment-info').classList.remove('hidden')
+
+
+        })
+
+        /* document.getElementById('make-payment').addEventListener('click', function(e){
+            submitFormData()
+        }) */
+
+        function submitFormData(){
+            console.log('Payment button Clicked...')
+
+            var userFormData = {
+                'name':null,
+                'email':null,
+                'total':total,
+                
+
+            }
+            var shippingInfo = {
+                'address':null,
+                'city':null,
+                'state':null,
+                'zipcode':null
+
+
+            }
+
+            if(shipping != 'False'){
+                shippingInfo.address = form.address.value
+                shippingInfo.city = form.city.value
+                shippingInfo.state = form.state.value
+                shippingInfo.zipcode = form.zipcode.value
+            }
+
+            if(user == 'AnonymousUser'){
+                userFormData.name = form.name.value
+                userFormData.email = form.email.value
+               
+            }
+
+            var url='/processOrder/'
+            fetch(url,{
+                method:'POST',
+                headers:{
+                    'Content-Type':'application/json',
+                    'X-CSRFToken':csrftoken,
+
+                },
+                body: JSON.stringify({'form':userFormData,'shipping':shippingInfo})
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log('Success: ', data);
+                alert('Transaction Completed...');
+                window.location.href= "{% url 'store' %}"
+            })
+            
+
+            
+        }
+
+        
+
+
+        
+
+       
+        
+
+
+    </script>
+
+
+    {% endblock content %}
+
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
